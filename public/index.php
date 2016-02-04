@@ -132,16 +132,18 @@ $app->group('/api', function () use ($app, $log) {
 
             $columns = 'ID,nickname,password,email,created';
             $table = 'user';
-            $where = array("email" => "$email","nickname" => "$nickname","password" => "$password");
-            $orwhere = array();
+            $where = array("email" => "$email");
+            $orwhere = array("nickname" => "$nickname");
             $limit = 1;
 
-            $isUserExists = dbHelper::select($pdo,$table, $columns, $where, $orwhere, $limit);
+            $response = dbHelper::select($pdo,$table, $columns, $where, $orwhere, $limit);
+            $isUserExists = $response['data'];
             if (!$isUserExists) {
                 $r->user->password = passwordHash::hash($password);
-                $table_name = "user";
-                $column_names = array('nickname', 'email', 'password');
-                $result = dbHelper::insert($r->user, $column_names, $table_name);
+                $requiredColumnsArray = array('nickname', 'email', 'password');
+                //$columnsArray = array("nickname" => "$nickname","email" => "$email","password" => "$password");
+                $columnsArray = $r->user;
+                $result = dbHelper::insert($pdo,$table, $columnsArray, $requiredColumnsArray);
                 if ($result != NULL) {
                     $response["status"] = "success";
                     $response["message"] = "User account created successfully";

@@ -77,7 +77,7 @@ class dbHelper {
     }
 
     public static function insert($pdo,$table, $columnsArray, $requiredColumnsArray) {
-        $self::verifyRequiredParams($columnsArray, $requiredColumnsArray);
+        self::verifyRequiredParams($requiredColumnsArray,$columnsArray);
             
         try {
             $a = array();
@@ -107,7 +107,7 @@ class dbHelper {
     }
 
     public static function update($pdo,$table, $columnsArray, $where, $requiredColumnsArray) {
-        $self::verifyRequiredParams($columnsArray, $requiredColumnsArray);
+        self::verifyRequiredParams($columnsArray, $requiredColumnsArray);
         try {
             $a = array();
             $w = "";
