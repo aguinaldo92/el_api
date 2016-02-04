@@ -57,7 +57,7 @@ class dbHelper {
                 $w .= " and " . $key . " like :" . $key;
                 $a[":" . $key] = $value;
             }
-            $stmt = $this->db->prepare("select " . $columns . " from " . $table . " where 1=1 " . $w . " " . $order);
+            $stmt = $pdo->prepare("select " . $columns . " from " . $table . " where 1=1 " . $w . " " . $order);
             $stmt->execute($a);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if (count($rows) <= 0) {
@@ -77,8 +77,8 @@ class dbHelper {
     }
 
     public static function insert($pdo,$table, $columnsArray, $requiredColumnsArray) {
-        $this->verifyRequiredParams($columnsArray, $requiredColumnsArray);
-
+        $self::verifyRequiredParams($columnsArray, $requiredColumnsArray);
+            
         try {
             $a = array();
             $c = "";
@@ -90,10 +90,11 @@ class dbHelper {
             }
             $c = rtrim($c, ', ');
             $v = rtrim($v, ', ');
-            $stmt = $this->db->prepare("INSERT INTO $table($c) VALUES($v)");
+            $stmt = $pdo->prepare("INSERT INTO $table($c) VALUES($v)");
             $stmt->execute($a);
             $affected_rows = $stmt->rowCount();
-            $lastInsertId = $this->db->lastInsertId();
+            $lastInsertId = $pdo->lastInsertId();
+            
             $response["status"] = "success";
             $response["message"] = $affected_rows . " row inserted into database";
             $response["data"] = $lastInsertId;
@@ -106,7 +107,7 @@ class dbHelper {
     }
 
     public static function update($pdo,$table, $columnsArray, $where, $requiredColumnsArray) {
-        $this->verifyRequiredParams($columnsArray, $requiredColumnsArray);
+        $self::verifyRequiredParams($columnsArray, $requiredColumnsArray);
         try {
             $a = array();
             $w = "";
@@ -121,7 +122,7 @@ class dbHelper {
             }
             $c = rtrim($c, ", ");
 
-            $stmt = $this->db->prepare("UPDATE $table SET $c WHERE 1=1 " . $w);
+            $stmt = $pdo->prepare("UPDATE $table SET $c WHERE 1=1 " . $w);
             $stmt->execute($a);
             $affected_rows = $stmt->rowCount();
             if ($affected_rows <= 0) {
@@ -150,7 +151,7 @@ class dbHelper {
                     $w .= " and " . $key . " = :" . $key;
                     $a[":" . $key] = $value;
                 }
-                $stmt = $this->db->prepare("DELETE FROM $table WHERE 1=1 " . $w);
+                $stmt = $pdo->prepare("DELETE FROM $table WHERE 1=1 " . $w);
                 $stmt->execute($a);
                 $affected_rows = $stmt->rowCount();
                 if ($affected_rows <= 0) {

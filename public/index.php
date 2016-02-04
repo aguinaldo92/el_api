@@ -52,15 +52,12 @@ $app->group('/api', function () use ($app, $log) {
         });
 
         $app->post('/login', function() use ($app) {
-
             $aParams = $app->request->params();
-
             $r = json_decode($app->request->getBody());
             //print_r($r);
-            $permessi = 0;
+           
             dbHelper::verifyRequiredParams(array('email', 'password'), $r->user);
             $response = array();
-
             $password = $r->user->password;
             $email = $r->user->email;
             $columns = "ID,nickname,password,email,created,is_a_student,is_a_teacher";
@@ -74,13 +71,20 @@ $app->group('/api', function () use ($app, $log) {
 
             if ($user != NULL) {
                 if (passwordHash::check_password($user['password'], $password)) {
-                    if ($user['is_a_student']) {
-                       $permessi +=1;
+                    switch ($user['is_a_teacher']+$user['is_a_student']) {
+                    case 1:
+                        $userType = "student";
+                        break;
+                    case 2:
+                        $userType = "teacher";
+                        break;
+                    case 3:
+                        $userType = "student and teacher";
+                        break;
+                    default :
+                        $userType = "undefined";
                     }
-                  
-                    if ($user['is_a_teacher']) {
-                        $permessi += 2;
-                    }
+                    
                     $response['status'] = "success";
                     $response['message'] = 'Logged in successfully.';
                     $response['nickname'] = $user['nickname'];
@@ -89,7 +93,7 @@ $app->group('/api', function () use ($app, $log) {
                     $response['createdAt'] = $user['created'];
                     $response['ruolo'] = $permessi;
                     $status_code = 200;
-// creazione del token
+                    // creazione del token
                     $issuer = "http://www.el_api.io";
                     $tokenId = base64_encode(mcrypt_create_iv(32));
                     $issuedAt = time();
@@ -100,7 +104,7 @@ $app->group('/api', function () use ($app, $log) {
                         "iat" => $issuedAt,
                         "nbf" => $notBefore,
                         "exp" => $expire,
-                        "userType" => ["logged"] // lo scope dipende dall'utente che fa il login
+                        "userType" => $userType // lo scope dipende dall'utente che fa il login
                     );               
                     $jwt = JWT::encode($token,SECRETJWT); // l'algoritmo predefinito è HS256
                     $response['jwt'] = $jwt;
@@ -116,45 +120,45 @@ $app->group('/api', function () use ($app, $log) {
             }
             UtilityClass::echoResponse($status_code, $response);
         });
-//        $app->post('/signUp', function() use ($app) {
-//            $response = array();
-//            $r = json_decode($app->request->getBody());
-//            verifyRequiredParams(array('email', 'nickname', 'password'), $r->user);
-//            require_once 'passwordHash.php';
-//            $db = new DbHelper();
-//
-//            $nickname = $r->user->nickname;
-//            $email = $r->user->email;
-//            $password = $r->user->password;
-//
-//            $columns = 'ID,nickname,password,email,created';
-//            $table = 'user';
-//            $where = "";
-//            $orwhere = "";
-//
-//            $isUserExists = $db->select($table, $columns, $where, $orwhere, '1');
-//            if (!$isUserExists) {
-//                $r->user->password = passwordHash::hash($password);
-//                $table_name = "user";
-//                $column_names = array('nickname', 'email', 'password');
-//                $result = $db->insertIntoTable($r->user, $column_names, $table_name);
-//                if ($result != NULL) {
-//                    $response["status"] = "success";
-//                    $response["message"] = "User account created successfully";
-//                    $response["ID"] = $result;
-//                    // inserire creazione del token            
-//                    echoResponse(200, $response);
-//                } else {
-//                    $response["status"] = "error";
-//                    $response["message"] = "Failed to create user. Please try again";
-//                    echoResponse(201, $response);
-//                }
-//            } else {
-//                $response["status"] = "error";
-//                $response["message"] = "An user with the provided phone or email exists!";
-//                echoResponse(201, $response);
-//            }
-//        });
+        $app->post('/signUp', function() use ($app) {
+            $response = array();
+            $r = json_decode($app->request->getBody());
+            dbHelper::verifyRequiredParams(array('email', 'nickname', 'password'), $r->user);
+            $pdo = $app->container['PDO'];
+
+            $nickname = $r->user->nickname;
+            $email = $r->user->email;
+            $password = $r->user->password;
+
+            $columns = 'ID,nickname,password,email,created';
+            $table = 'user';
+            $where = array("email" => "$email","nickname" => "$nickname","password" => "$password");
+            $orwhere = array();
+            $limit = 1;
+
+            $isUserExists = dbHelper::select($pdo,$table, $columns, $where, $orwhere, $limit);
+            if (!$isUserExists) {
+                $r->user->password = passwordHash::hash($password);
+                $table_name = "user";
+                $column_names = array('nickname', 'email', 'password');
+                $result = dbHelper::insert($r->user, $column_names, $table_name);
+                if ($result != NULL) {
+                    $response["status"] = "success";
+                    $response["message"] = "User account created successfully";
+                    $response["ID"] = $result;
+                    // inserire creazione del token            
+                    UtilityClass::echoResponse(200, $response);
+                } else {
+                    $response["status"] = "error";
+                    $response["message"] = "Failed to create user. Please try again";
+                    UtilityClass::echoResponse(201, $response);
+                }
+            } else {
+                $response["status"] = "error";
+                $response["message"] = "An user with the provided nickname or email exists!";
+                UtilityClass::echoResponse(201, $response);
+            }
+        });
     });
 });
 $app->run();
