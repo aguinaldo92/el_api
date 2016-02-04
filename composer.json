@@ -1,0 +1,30 @@
+{
+    "name": "AndreaLicastro/Elearning",
+    "description": "Web site developed in PHP and AngularJS",
+    "require": {
+        "php": ">=5.5.0",
+        "ext-pdo": "*",
+        "slim/slim": "2.6",
+        "slim/extras": "*",
+        "slim/middleware": "*",
+        "tuupola/slim-jwt-auth":"*",
+        "monolog/monolog": "*",
+        "flynsarmy/slim-monolog": "*"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Andrea Licastro",
+            "email": "aguinaldo.licastro@live.it"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "el_api\\": ["API/v1/","utility/"]
+        }
+    },
+    "archive": {
+        "exclude": ["vendor", ".DS_Store", "share"]
+    }
+   
+}
