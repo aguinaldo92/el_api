@@ -91,7 +91,7 @@ $app->group('/api', function () use ($app, $log) {
                     $response['ID'] = $user['ID'];
                     $response['email'] = $user['email'];
                     $response['createdAt'] = $user['created'];
-                    $response['ruolo'] = $permessi;
+                    $response['ruolo'] = $userType;
                     $status_code = 200;
                     // creazione del token
                     $issuer = "http://www.el_api.io";
@@ -121,7 +121,6 @@ $app->group('/api', function () use ($app, $log) {
             UtilityClass::echoResponse($status_code, $response);
         });
         $app->post('/signUp', function() use ($app) {
-            $response = array();
             $r = json_decode($app->request->getBody());
             dbHelper::verifyRequiredParams(array('email', 'nickname', 'password'), $r->user);
             $pdo = $app->container['PDO'];
