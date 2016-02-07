@@ -85,8 +85,8 @@ $app->add(new \Slim\Middleware\JwtAuthentication([
     "secret" => SECRETJWT,
     "rules" => [
         new \Slim\Middleware\JwtAuthentication\RequestPathRule([
-            "path" => "\API\v1",
-            "passthrough" => ["/login", "/signup"]
+            "path" => "/api/v1",
+            "passthrough" => ["/api/v1/login", "/api/v1/signup"]
                 ]),
         new \Slim\Middleware\JwtAuthentication\RequestMethodRule([
             "passthrough" => ["OPTIONS"]
@@ -94,6 +94,7 @@ $app->add(new \Slim\Middleware\JwtAuthentication([
     ],
     "callback" => function ($decoded, $app) {
         $app->jwt = $decoded;
+        
     }
 ]));
 

@@ -12,7 +12,7 @@ class dbHelper {
         
     }
 
-    public static function select($pdo,$table, $columns, $where, $orwhere, $limit = 99999) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
+    public static function select($pdo,$table, $columns, $where, $orwhere, $limit) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
         try {
             $a = array();  // chiave associativa per l'array di condizioni where in AND and OR
 
@@ -49,7 +49,7 @@ class dbHelper {
         return $response;
     }
 
-    public function select2($pdo,$table, $columns, $where, $order) {
+    public function selectOrdered($pdo,$table, $columns, $where, $order) {
         try {
             $a = array();
             $w = "";
@@ -57,7 +57,7 @@ class dbHelper {
                 $w .= " and " . $key . " like :" . $key;
                 $a[":" . $key] = $value;
             }
-            $stmt = $pdo->prepare("select " . $columns . " from " . $table . " where 1=1 " . $w . " " . $order);
+            $stmt = $pdo->prepare("select " . $columns . " from " . $table . " where 1=1 " . $w . " order by " . $order);
             $stmt->execute($a);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if (count($rows) <= 0) {
