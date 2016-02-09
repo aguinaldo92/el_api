@@ -119,7 +119,8 @@ $app->group('/api', function () use ($app, $log) {
             }
             UtilityClass::echoResponse($status_code, $response);
         });
-        $app->post('/signup', function() use ($app) {
+        $app->post('/signup', function() use ($app,$log) {
+            $log->debug("/signup");
             $r = json_decode($app->request->getBody());
             dbHelper::verifyRequiredParams(array('email', 'nickname', 'password'), $r->user);
 
@@ -192,7 +193,7 @@ $app->group('/api', function () use ($app, $log) {
             $log->debug("lessons of course $id");
 
             $pdo = $app->container['PDO'];
-            $columns = "title,date,start_at,finish_at";
+            $columns = "title,date,start_at,finish_at,ID_course";
             $table = 'V_lesson_of_course';
             $where = array("ID_course" => "$id");
             $orwhere = array();
