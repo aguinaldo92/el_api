@@ -4,10 +4,12 @@
 require_once dirname(__FILE__) . '\vendor\autoload.php';
 
 use el_api\UtilityClass;
+use el_api\dbHelper;
 
 // Init config data
 $config = array();
 
+date_default_timezone_set('Europe/Rome');
 
 if (empty($_ENV['SLIM_MODE'])) {
     $_ENV['SLIM_MODE'] = (getenv('SLIM_MODE')) ? getenv('SLIM_MODE') : 'development';
@@ -37,29 +39,20 @@ $app = new Slim\Slim($config['app']);
 
 
 // Add dependencies
-$app->container->singleton('PDO', function ($container) {
-    try {
-        $settings = $container['settings'];
-        $pdo = new PDO($settings['db.dsn'], $settings['db.username'], $settings['db.password']);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $pdo;
-    } catch (PDOException $e) {
-        $response["status"] = "error";
-        $response["message"] = 'Connection failed: ' . $e->getMessage();
-        $response["data"] = null;
-        $status_code = 503;
-        UtilityClass::echoResponse($status_code, $response);
-        exit('unable to connect to Database');
-    }
-});
 
 $app->container->singleton('log', function () {
     $log = new \Monolog\Logger('el_api_logs');
     $log->pushHandler(new \Monolog\Handler\StreamHandler(dirname(__FILE__) . '/share/logs/' . date('Y-m-d') . '.log'));
     return $log;
 });
-$log = $app->container['log'];
 
+$app->container->singleton('dbHelperObject', function () {
+    $dbHelperObject = new dbHelper();
+    return $dbHelperObject;
+});
+
+$log = $app->container['log'];
+$dbHelperObject = $app->container['dbHelperObject'];
 
 // Only invoked if mode is "production"
 $app->configureMode('production', function () use ($app) {
@@ -86,7 +79,7 @@ $app->add(new \Slim\Middleware\JwtAuthentication([
     "rules" => [
         new \Slim\Middleware\JwtAuthentication\RequestPathRule([
             "path" => "/api/v1",
-            "passthrough" => ["/api/v1/login", "/api/v1/signup"]
+            "passthrough" => ["/api/v1/login", "/api/v1/signup", "/api/v1"]
                 ]),
         new \Slim\Middleware\JwtAuthentication\RequestMethodRule([
             "passthrough" => ["OPTIONS"]

@@ -3,16 +3,30 @@ namespace el_api;
 
 use PDO;
 use PDOException;
-use el_api;
+
 
 
 class dbHelper {
 
-    private function __construct() {
-        
+   private $db;
+   //private $err;
+    function __construct() {
+        $dsn = 'mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset=utf8';
+        try {
+            $this->db = new PDO($dsn, DB_USERNAME, DB_PASSWORD);
+            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $e) {
+            $response["status"] = "error";
+            $response["message"] = 'Connection failed: ' . $e->getMessage();
+            $response["data"] = null;
+            $status_code = 503;
+            
+        UtilityClass::echoResponse($status_code, $response);
+        exit('unable to connect to Database');
+        }
     }
 
-    public static function select($pdo,$table, $columns, $where, $orwhere, $limit) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
+    public  function select($table, $columns, $where, $orwhere, $limit) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
         try {
             $a = array();  // chiave associativa per l'array di condizioni where in AND and OR
 
@@ -29,7 +43,7 @@ class dbHelper {
             }
 
             $query = "SELECT " . $columns . " FROM " . $table . " WHERE 1=1 " . $w . " " . $ow . " LIMIT " . $limit;
-            $stmt = $pdo->prepare($query);
+            $stmt = $this->db->prepare($query);
             
             $stmt->execute($a);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -49,7 +63,7 @@ class dbHelper {
         return $response;
     }
 
-    public function selectOrdered($pdo,$table, $columns, $where, $order) {
+    public function selectOrdered($table, $columns, $where, $order) {
         try {
             $a = array();
             $w = "";
@@ -57,7 +71,7 @@ class dbHelper {
                 $w .= " and " . $key . " like :" . $key;
                 $a[":" . $key] = $value;
             }
-            $stmt = $pdo->prepare("select " . $columns . " from " . $table . " where 1=1 " . $w . " order by " . $order);
+            $stmt = $this->db->prepare("select " . $columns . " from " . $table . " where 1=1 " . $w . " order by " . $order);
             $stmt->execute($a);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if (count($rows) <= 0) {
@@ -76,7 +90,7 @@ class dbHelper {
         return $response;
     }
 
-    public static function insert($pdo,$table, $columnsArray, $requiredColumnsArray) {
+    public  function insert($table, $columnsArray, $requiredColumnsArray) {
         self::verifyRequiredParams($requiredColumnsArray,$columnsArray);
             
         try {
@@ -90,10 +104,10 @@ class dbHelper {
             }
             $c = rtrim($c, ', ');
             $v = rtrim($v, ', ');
-            $stmt = $pdo->prepare("INSERT INTO $table($c) VALUES($v)");
+            $stmt = $this->db->prepare("INSERT INTO $table($c) VALUES($v)");
             $stmt->execute($a);
             $affected_rows = $stmt->rowCount();
-            $lastInsertId = $pdo->lastInsertId();
+            $lastInsertId = $this->db->lastInsertId();
             
             $response["status"] = "success";
             $response["message"] = $affected_rows . " row inserted into database";
@@ -106,7 +120,7 @@ class dbHelper {
         return $response;
     }
 
-    public static function update($pdo,$table, $columnsArray, $where, $requiredColumnsArray) {
+    public  function update($table, $columnsArray, $where, $requiredColumnsArray) {
         self::verifyRequiredParams($columnsArray, $requiredColumnsArray);
         try {
             $a = array();
@@ -122,7 +136,7 @@ class dbHelper {
             }
             $c = rtrim($c, ", ");
 
-            $stmt = $pdo->prepare("UPDATE $table SET $c WHERE 1=1 " . $w);
+            $stmt = $this->db->prepare("UPDATE $table SET $c WHERE 1=1 " . $w);
             $stmt->execute($a);
             $affected_rows = $stmt->rowCount();
             if ($affected_rows <= 0) {
@@ -139,7 +153,7 @@ class dbHelper {
         return $response;
     }
 
-    public static function delete($pdo,$table, $where) {
+    public  function delete($table, $where) {
         if (count($where) <= 0) {
             $response["status"] = "warning";
             $response["message"] = "Delete Failed: At least one condition is required";
@@ -151,7 +165,7 @@ class dbHelper {
                     $w .= " and " . $key . " = :" . $key;
                     $a[":" . $key] = $value;
                 }
-                $stmt = $pdo->prepare("DELETE FROM $table WHERE 1=1 " . $w);
+                $stmt = $this->db->prepare("DELETE FROM $table WHERE 1=1 " . $w);
                 $stmt->execute($a);
                 $affected_rows = $stmt->rowCount();
                 if ($affected_rows <= 0) {
@@ -170,7 +184,7 @@ class dbHelper {
     }
 
    
-    public static function verifyRequiredParams($requiredColumns,$inArray) {
+    public  function verifyRequiredParams($requiredColumns,$inArray) {
         $error = false;
         $errorColumns = "";
         foreach ($requiredColumns as $field) {

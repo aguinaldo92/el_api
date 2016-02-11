@@ -5,7 +5,6 @@ require_once dirname(__FILE__) . '/../bootstrap.php';
 //require_once '../API/v1/dbHelper.php'; l'autoloading di dbHelper funziona bene, proviamo
 // a farlo per tutti i files e implementare le api che ci sono già.
 // Inserire la creazione dei token tramite psr e poi jwt tuupla
-use el_api\dbHelper;
 use el_api\UtilityClass;
 use el_api\passwordHash;
 use \Firebase\JWT\JWT;
@@ -25,10 +24,10 @@ $app->get('/', function() {
 });
 
 
-$app->group('/api', function () use ($app, $log) {
+$app->group('/api', function () use ($app, $log, $dbHelperObject) {
 
     // Version group
-    $app->group('/v1', function () use ($app, $log) {
+    $app->group('/v1', function () use ($app, $log, $dbHelperObject) {
 
         $app->get('/', function () {
             echo "<h1>This can be the documentation entry point</h1>";
@@ -41,21 +40,35 @@ $app->group('/api', function () use ($app, $log) {
         });
 
 
-        $app->get('/login', function () use ($app) {
+        $app->get('/login', function () use ($app, $log, $dbHelperObject) {
             echo "<h1>Login</h1>";
             echo "<p>All'inizio del debugging si ottiene una chiamata get</p>";
 
-            $log = $app->container['log'];
             $log->debug('get /login');
             //$app->response->status(200); non serve, però potrebbe essere una cosa utile
         });
+        
+        $app->get('/prova', function () use ($app, $log, $dbHelperObject) {
+            echo "<h1>prova</h1>";
+            echo "<p>All'inizio del debugging si ottiene una chiamata get</p>";
 
-        $app->post('/login', function() use ($app) {
+            $log->debug('get /prova');
+            $columns = "ID,title,description,price,start_date,end_date,max_number_of_students,ID_subject";
+            $table = 'course';
+            $where = array();
+            $orwhere = array();
+            $limit = 50;
+
+            $response = $dbHelperObject->select($table, $columns, $where, $orwhere, $limit);
+            UtilityClass::echoResponse(200, $response);
+            
+        });
+
+        $app->post('/login', function() use ($app, $log, $dbHelperObject) {
             $aParams = $app->request->params();
             $r = json_decode($app->request->getBody());
             //print_r($r);
-
-            dbHelper::verifyRequiredParams(array('email', 'password'), $r->user);
+            $dbHelperObject->verifyRequiredParams(array('email', 'password'), $r->user);
             $response = array();
             $password = $r->user->password;
             $email = $r->user->email;
@@ -64,8 +77,8 @@ $app->group('/api', function () use ($app, $log) {
             $limit = "1";
             $where = array("email" => "$email");
             $orwhere = array("nickname" => "$email");
-            $pdo = $app->container['PDO'];
-            $result = dbHelper::select($pdo, $table, $columns, $where, $orwhere, $limit);
+            
+            $result = $dbHelperObject->select( $table, $columns, $where, $orwhere, $limit);
             $user = $result['data'][0];
 
             if ($user != NULL) {
@@ -119,30 +132,30 @@ $app->group('/api', function () use ($app, $log) {
             }
             UtilityClass::echoResponse($status_code, $response);
         });
-        $app->post('/signup', function() use ($app,$log) {
+        $app->post('/signup', function() use ($app, $log, $dbHelperObject) {
             $log->debug("/signup");
             $r = json_decode($app->request->getBody());
-            dbHelper::verifyRequiredParams(array('email', 'nickname', 'password'), $r->user);
+            $dbHelperObject->verifyRequiredParams(array('email', 'nickname', 'password'), $r->user);
 
             $nickname = $r->user->nickname;
             $email = $r->user->email;
             $password = $r->user->password;
 
-            $pdo = $app->container['PDO'];
+            
             $columns = 'ID,nickname,password,email,created';
             $table = 'user';
             $where = array("email" => "$email");
             $orwhere = array("nickname" => "$nickname");
             $limit = 1;
 
-            $response = dbHelper::select($pdo, $table, $columns, $where, $orwhere, $limit);
+            $response = $dbHelperObject->select( $table, $columns, $where, $orwhere, $limit);
             $isUserExists = $response['data'];
             if (!$isUserExists) {
                 $r->user->password = passwordHash::hash($password);
                 $requiredColumnsArray = array('nickname', 'email', 'password');
                 //$columnsArray = array("nickname" => "$nickname","email" => "$email","password" => "$password");
                 $columnsArray = $r->user;
-                $result = dbHelper::insert($pdo, $table, $columnsArray, $requiredColumnsArray);
+                $result = $dbHelperObject->insert( $table, $columnsArray, $requiredColumnsArray);
                 if ($result != NULL) {
                     $response["status"] = "success";
                     $response["message"] = "User account created successfully";
@@ -175,36 +188,34 @@ $app->group('/api', function () use ($app, $log) {
             }
         });
 
-        $app->get('/courses', function () use ($app, $log) {
+        $app->get('/courses', function () use ($app, $log, $dbHelperObject) {
             $log->debug("courses");
 
-            $pdo = $app->container['PDO'];
             $columns = "ID,title,description,price,start_date,end_date,max_number_of_students,ID_subject";
             $table = 'course';
             $where = array();
             $orwhere = array();
             $limit = 50;
 
-            $response = dbHelper::select($pdo, $table, $columns, $where, $orwhere, $limit);
+            $response = $dbHelperObject->select( $table, $columns, $where, $orwhere, $limit);
             UtilityClass::echoResponse(200, $response);
         });
         
-        $app->get('/courses/:id/lessons', function ($id) use ($app, $log) {
+        $app->get('/courses/:id/lessons', function ($id) use ($app, $log, $dbHelperObject) {
             $log->debug("lessons of course $id");
 
-            $pdo = $app->container['PDO'];
             $columns = "title,date,start_at,finish_at,ID_course";
             $table = 'V_lesson_of_course';
             $where = array("ID_course" => "$id");
             $orwhere = array();
             $limit = 500;
 
-            $response = dbHelper::select($pdo, $table, $columns, $where, $orwhere, $limit);
+            $response = $dbHelperObject->select( $table, $columns, $where, $orwhere, $limit);
             UtilityClass::echoResponse(200, $response);
         });
         
 
-        $app->get('/teachers', function() {
+        $app->get('/teachers', function() use ($app, $log, $dbHelperObject) {
 
             $columns = "ID,first_name,last_name,nickname,email,password,address,birthdate,gender,educational_qualification,image,is_a_student,is_a_teacher,is_active,created";
             $table = "user";
@@ -213,11 +224,11 @@ $app->group('/api', function () use ($app, $log) {
             );
             $orwhere = array();
             //$limit = 9999;
-            $response = dbHelper::select($pdo, $table, $columns, $where, $orwhere, $limit);
+            $response = $dbHelperObject->select( $table, $columns, $where, $orwhere, $limit);
             echoResponse(200, $response);
         });
        
-        $app->get('/teachers/:id', function($id) use ($app,$log){
+        $app->get('/teachers/:id', function($id) use ($app, $log, $dbHelperObject){
             $log->debug("/teachers/:id");
             if (false === $id) {
                 throw new Exception("Invalid contact ID");
@@ -231,7 +242,7 @@ $app->group('/api', function () use ($app, $log) {
             );
             $orwhere = array();
             $limit = 1;
-            $result = dbHelper::select($pdo, $table, $columns, $where, $orwhere, $limit);
+            $result = $dbHelperObject->select( $table, $columns, $where, $orwhere, $limit);
             echoResponse(200, $result);
         });
     }); // fine del gruppo /api/v1
