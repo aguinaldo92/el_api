@@ -1,4 +1,4 @@
-<?php namespace el_api;
+<?php namespace utility;
 
  class UtilityClass
 {

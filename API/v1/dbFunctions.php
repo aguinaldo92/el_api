@@ -1,8 +1,8 @@
-<?php  namespace el_api;
+<?php  namespace el_api_v1;
 
 use PDO;
 use PDOException;
-use el_api;
+use utility\UtilityClass;
 
 class dbFunctions {
 

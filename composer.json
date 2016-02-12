@@ -1,5 +1,5 @@
 {
-    "name": "AndreaLicastro/Elearning",
+    "name": "andrea-licastro/elearning",
     "description": "Web site developed in PHP and AngularJS",
     "require": {
         "php": ">=5.5.0",
@@ -10,6 +10,7 @@
         "tuupola/slim-jwt-auth":"*",
         "monolog/monolog": "*",
         "flynsarmy/slim-monolog": "*"
+        
     },
     "require-dev": {
         "phpunit/phpunit": "4.8.*",
@@ -25,7 +26,8 @@
     ],
     "autoload": {
         "psr-4": {
-            "el_api\\": ["API/v1/","utility/"]
+            "el_api_v1\\": "API/v1/",
+            "utility\\"  : "utility"
         }
     },
     "archive": {

@@ -1,4 +1,4 @@
-<?php namespace el_api;
+<?php namespace el_api_v1;
 
 class passwordHash {
 

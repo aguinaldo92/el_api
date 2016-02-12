@@ -3,8 +3,7 @@
 // Including global autoloader
 require_once dirname(__FILE__) . '\vendor\autoload.php';
 
-use el_api\UtilityClass;
-use el_api\dbHelper;
+use el_api_v1\dbHelper;
 
 // Init config data
 $config = array();

@@ -2,11 +2,8 @@
 
 require_once dirname(__FILE__) . '/../bootstrap.php';
 
-//require_once '../API/v1/dbHelper.php'; l'autoloading di dbHelper funziona bene, proviamo
-// a farlo per tutti i files e implementare le api che ci sono già.
-// Inserire la creazione dei token tramite psr e poi jwt tuupla
-use el_api\UtilityClass;
-use el_api\passwordHash;
+use utility\UtilityClass;
+use el_api_v1\passwordHash;
 use \Firebase\JWT\JWT;
 
 // API group
