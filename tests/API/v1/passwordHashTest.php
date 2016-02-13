@@ -29,35 +29,49 @@ class passwordHashTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @dataProvider passwordProvider
      * @covers el_api_v1\passwordHash::unique_salt
-     * @todo   Implement testUnique_salt().
+     * @todo   Implement testUnique_salt22RandomCharacters().
      */
-    public function testUnique_salt() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
+    public function testUnique_saltHas22RandomCharacters() {
+        $uniqueSalt = $this->object->unique_salt();
+        $format = '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c';
+        $this->assertStringMatchesFormat($format, $uniqueSalt);
     }
 
     /**
+     * @param string $name plain text password
+     * @dataProvider passwordProvider
      * @covers el_api_v1\passwordHash::hash
-     * @todo   Implement testHash().
+     * @todo   Implement testHash($password).
      */
-    public function testHash() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
-        );
+    public function testHash($password) {
+        $returnHashString = $this->object->hash($password);
+        $this->assertTrue(strlen($returnHashString) === 60);
     }
 
     /**
+     * 
+     * @param string $name plain text password
+     * 
+     * @dataProvider passwordProvider
      * @covers el_api_v1\passwordHash::check_password
-     * @todo   Implement testCheck_password().
+     * @todo   Implement testCheck_password($password).
+     * 
      */
-    public function testCheck_password() {
-        // Remove the following lines when you implement this test.
-        $this->markTestIncomplete(
-                'This test has not been implemented yet.'
+    public function testCheck_password($password) {
+        $originalHash = $this->object->hash($password);
+        $this->assertTrue($this->object->check_password($originalHash, $password));
+    }
+    
+    public function passwordProvider() {
+        return array(
+            'only letters lowercase' => array("njduom"),
+            'mixed lowercase uppercase' => array("MSKnudknnsiSomsE"),
+            'numbers and letters' => array("8j23jenjqSEkj8q9dj"),
+            'letters numbers and symbols' => array('1,9jS7/NDJNJ$BW_+sòaoè3'),
+            'few characters' => array('u7_'),
+            'so many charachters' => array('lao8AJ2m2p_sò°aò,çaknm)n3u7st7iq%wgu"qoYsblq&5qku$52')
         );
     }
 
