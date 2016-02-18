@@ -73,7 +73,8 @@ $app->post('/login', function() use ($app, $log, $dbHelperObject) {
                 "iat" => $issuedAt,
                 "nbf" => $notBefore,
                 "exp" => $expire,
-                "userType" => $userType // lo scope dipende dall'utente che fa il login
+                "userType" => $userType, // lo scope dipende dall'utente che fa il login
+                "ID"    => $user['ID']
             );
             $jwt = JWT::encode($token, SECRETJWT); // l'algoritmo predefinito è HS256
             $response['jwt'] = $jwt;
@@ -88,30 +89,6 @@ $app->post('/login', function() use ($app, $log, $dbHelperObject) {
         $status_code = 401;
     }
     UtilityClass::echoResponse($status_code, $response);
-});
-
-$app->get('/prova', function () use ($app, $log, $dbHelperObject) {
-    echo "<h1>prova</h1>";
-    echo "<p>All'inizio del debugging si ottiene una chiamata get</p>";
-
-    $log->debug('get /prova');
-    $columns = "ID,title,description,price,start_date,end_date,max_number_of_students,ID_subject";
-    $table = 'course';
-    $where = array();
-    $orwhere = array();
-    $limit = 50;
-
-    $response = $dbHelperObject->select($table, $columns, $where, $orwhere, $limit);
-    UtilityClass::echoResponse(200, $response);
-});
-
-
-$app->get('/login', function () use ($app, $log, $dbHelperObject) {
-    echo "<h1>Login</h1>";
-    echo "<p>All'inizio del debugging si ottiene una chiamata get</p>";
-
-    $log->debug('get /login');
-    //$app->response->status(200); non serve, però potrebbe essere una cosa utile
 });
 
 

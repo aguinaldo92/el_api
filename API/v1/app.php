@@ -47,13 +47,11 @@ $app->get('/courses/:id/lessons', function ($id) use ($app, $log, $dbHelperObjec
 
 $app->get('/teachers', function() use ($app, $log, $dbHelperObject) {
 
-    $columns = "ID,first_name,last_name,nickname,email,password,address,birthdate,gender,educational_qualification,image,is_a_student,is_a_teacher,is_active,created";
-    $table = "user";
-    $where = array(
-        "is_a_teacher" => "1"
-    );
+    $columns = "ID,first_name,last_name,nickname,email,state,birthdate,gender,educational_qualification,image,is_active,created";
+    $table = "v_teachers";
+    $where = array();
     $orwhere = array();
-    //$limit = 9999;
+    $limit = 9999;
     $response = $dbHelperObject->select($table, $columns, $where, $orwhere, $limit);
     echoResponse(200, $response);
 });
@@ -64,10 +62,9 @@ $app->get('/teachers/:id', function($id) use ($app, $log, $dbHelperObject) {
         throw new Exception("Invalid contact ID");
     }
 
-    $columns = "ID,first_name,last_name,nickname,email,password,address,birthdate,gender,educational_qualification,image,is_a_student,is_a_teacher,is_active,created";
-    $table = "user";
+    $columns = "ID,first_name,last_name,nickname,email,state,birthdate,gender,educational_qualification,image,is_active,created";
+    $table = "v_teachers";
     $where = array(
-        "is_a_teacher" => "1",
         "ID" => "$id"
     );
     $orwhere = array();
