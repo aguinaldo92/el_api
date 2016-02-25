@@ -1,13 +1,21 @@
-<?php namespace utility;
+<?php
 
- class UtilityClass
-{
-  public static function echoResponse($status_code, $response) {
-    $app = \Slim\Slim::getInstance();
-    // Http response code
-    $app->status($status_code);
-    // setting response content type to json
-    $app->contentType('application/json');
-    echo json_encode($response,JSON_PRETTY_PRINT);
-}
-}
+namespace utility;
+
+
+
+class UtilityClass {
+
+    public static function echoResponse($status_code, $response) {
+        $app = \Slim\Slim::getInstance();
+        // Http response code
+        $app->status($status_code);
+        // setting response content type to json
+        $app->contentType('application/json');
+        echo json_encode($response, JSON_PRETTY_PRINT); // slim automaticcally append echo() to response body
+        if (preg_match("/4\d\d/", $status_code)) {
+           $app->halt($status_code) ;
+        }
+    }
+    
+  }
