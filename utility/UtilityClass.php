@@ -1,4 +1,6 @@
-<?php namespace utility;
+<?php
+
+namespace utility;
 
 class UtilityClass {
 
@@ -9,9 +11,9 @@ class UtilityClass {
         // setting response content type to json
         $app->contentType('application/json');
         echo json_encode($response, JSON_PRETTY_PRINT); // slim automaticcally append echo() to response body
-        if (preg_match("/4\d\d/", $status_code)) {
-           $app->halt($status_code) ;
+        if (preg_match("/(4|5)\d\d/", $status_code)) {
+            $app->halt($status_code); // se l'errore è di tipo 4xx o 5xx ferma l'esecuzione del codice
         }
     }
-    
-  }
+
+}

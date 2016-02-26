@@ -1,16 +1,17 @@
-<?php namespace utility;
+<?php
 
-class Sanitize
-{
+namespace utility;
+
+class Sanitize {
+
     private $input;
 
-    public function setInput(SanitizeInterface $inputType)
-    {
+    public function setInput(SanitizeInterface $inputType) {
         $this->input = $inputType;
     }
 
-    public function loadInput($string)
-    {
-        return $this->input->sanitize($string);
+    public function loadInput($string,$type) {
+        return $this->input->sanitize($string,$type);
     }
+
 }
