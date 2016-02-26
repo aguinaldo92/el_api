@@ -131,7 +131,8 @@ $app->post('/signup', function() use ($app, $log, $dbHelperObject) {
                 "iat" => $issuedAt,
                 "nbf" => $notBefore,
                 "exp" => $expire,
-                "userType" => $userType // lo scope dipende dall'utente che fa il login
+                "userType" => $userType, // lo scope dipende dall'utente che fa il login
+                "ID"  => $response["ID"]
             );
             $jwt = JWT::encode($token, SECRETJWT); // l'algoritmo predefinito è HS256
             $response['jwt'] = $jwt;

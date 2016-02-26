@@ -1,8 +1,4 @@
-<?php
-
-namespace utility;
-
-
+<?php namespace utility;
 
 class UtilityClass {
 

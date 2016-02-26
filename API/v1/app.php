@@ -1,5 +1,8 @@
 <?php
 
+use utility\UtilityClass;
+use utility\Sanitize;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -20,12 +23,14 @@ $app->get('/', function () {
 
 $app->get('/courses', function () use ($app, $log, $dbHelperObject) {
     $log->debug("courses");
-
-    $columns = "ID,title,description,price,start_date,end_date,max_number_of_students,ID_subject";
-    $table = 'course';
-    $where = array();
-    $orwhere = array();
-    $limit = 50;
+    $columns = $app->request->get('fields') ? $app->request->get('fields') : '*';
+//    $columns = (($body->fields) ? $body->fields : "*");
+    //$columns = "title,description,price,start_date,end_date,max_number_of_students";
+    $table = 'v_courses';
+    $where = $app->request->get('where');
+    $orwhere = $app->request->get('orwhere');
+    $sort = $app->request->get('sort');
+    $limit = $app->request->get('limit');
 
     $response = $dbHelperObject->select($table, $columns, $where, $orwhere, $limit);
     UtilityClass::echoResponse(200, $response);

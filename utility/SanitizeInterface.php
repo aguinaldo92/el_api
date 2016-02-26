@@ -1,4 +1,4 @@
-<?php
+<?php namespace utility;
 
 interface SanitizeInterface {
 
@@ -8,12 +8,11 @@ interface SanitizeInterface {
 class SanitizeString implements SanitizeInterface {
 
     public function sanitize($string, $allow = null) {
-        $pattern = '/[^A-Za-z0-9]/';
+        $pattern = '/[^A-Za-z0-9_]/';
         if ($allow === "space") { 
-            $pattern = '/[^A-Za-z0-9 ]/';
-            $string = trim($string); // gli spazi iniziali e finali non soono cmq ammessi
+            $pattern = '/[^A-Za-z0-9 _]/';
         }
-        return  preg_replace($pattern, '', $string); // Removes special chars.
+        return  trim(preg_replace($pattern, '', $string)); // Removes special chars and leading and trailing spaces
     }
 
 }
@@ -24,7 +23,7 @@ class SanitizeNumber implements SanitizeInterface {
         if ($type === "float") {
             $pattern = '/[^0-9\.]/';
         }
-        return  preg_replace($pattern, '', $number); // Removes special chars.
+        return  trim(preg_replace($pattern, '', $number)); // Removes special chars and leading and trailing spaces
     }
 
 }
