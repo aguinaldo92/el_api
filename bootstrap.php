@@ -10,16 +10,27 @@ $config = array();
 
 date_default_timezone_set('Europe/Rome');
 
-if (empty($_ENV['SLIM_MODE'])) {
-    $_ENV['SLIM_MODE'] = (getenv('SLIM_MODE')) ? getenv('SLIM_MODE') : 'development';
+$slim_mode = filter_input(INPUT_SERVER, 'SLIM_MODE', FILTER_SANITIZE_STRING);
+
+switch ($slim_mode) {
+    case 'development':
+        $configFile = dirname(__FILE__) . '/share/config/' . $slim_mode . '.php';
+        break;
+    
+    case 'production':
+        $configFile = dirname(__FILE__) . '/share/config/' . $slim_mode . '.php';
+        break;
+    
+    default:
+        $slim_mode = 'default';
+        $configFile = dirname(__FILE__) . '/share/config/' . $slim_mode . '.php';
+        break;
 }
-
-
-// Load config file
-$configFile = dirname(__FILE__) . '\share\config\default.php';
 
 if (is_readable($configFile)) {
     require_once $configFile;
+} else {
+    exit("no file of configuration found, exit\n");
 }
 
 // Basic config for Slim Application
@@ -30,7 +41,7 @@ $config['app'] = array(
     'name' => 'Elearning',
     'log.enabled' => true,
     'log.level' => Slim\Log::INFO,
-    'mode' => (!empty($_ENV['SLIM_MODE'])) ? $_ENV['SLIM_MODE'] : 'production'
+    'mode' => ($slim_mode == "default") ? 'production' : $slim_mode
 );
 
 // Create application instance with config
@@ -46,7 +57,7 @@ $app->container->singleton('log', function () {
 });
 
 $app->container->singleton('dbHelperObject', function () {
-    $dbHelperObject = new dbHelper();
+    $dbHelperObject = new dbHelper(DBHELPER_MODE);
     return $dbHelperObject;
 });
 
@@ -85,8 +96,7 @@ $app->add(new \Slim\Middleware\JwtAuthentication([
                 ])
     ],
     "callback" => function ($decoded, $app) {
-        $app->jwt = $decoded;
-        
-    }
+$app->jwt = $decoded;
+}
 ]));
 

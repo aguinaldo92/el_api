@@ -1,7 +1,8 @@
+SetEnv SLIM_MODE development
 RewriteEngine On 
-#RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteCond %{REQUEST_FILENAME} !-f 
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA]
-RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization}] [L]
+RewriteRule ^ index.php [QSA,L]
+#RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization}] [L]
 ## forse va cambiato in RewriteRule ^ index.php [QSA,L] poichè la web root è già la cartella dove si trova index.php

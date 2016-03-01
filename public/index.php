@@ -20,7 +20,6 @@ $app->get('/', function() {
     echo '<br>';
 });
 $app->post('/login', function() use ($app, $log, $dbHelperObject) {
-    $aParams = $app->request->params();
     $r = json_decode($app->request->getBody());
     //print_r($r);
     $dbHelperObject->verifyRequiredParams(array('email', 'password'), $r->user);
@@ -74,7 +73,7 @@ $app->post('/login', function() use ($app, $log, $dbHelperObject) {
                 "nbf" => $notBefore,
                 "exp" => $expire,
                 "userType" => $userType, // lo scope dipende dall'utente che fa il login
-                "ID"    => $user['ID']
+                "ID" => $user['ID']
             );
             $jwt = JWT::encode($token, SECRETJWT); // l'algoritmo predefinito è HS256
             $response['jwt'] = $jwt;
@@ -132,7 +131,7 @@ $app->post('/signup', function() use ($app, $log, $dbHelperObject) {
                 "nbf" => $notBefore,
                 "exp" => $expire,
                 "userType" => $userType, // lo scope dipende dall'utente che fa il login
-                "ID"  => $response["ID"]
+                "ID" => $response["ID"]
             );
             $jwt = JWT::encode($token, SECRETJWT); // l'algoritmo predefinito è HS256
             $response['jwt'] = $jwt;

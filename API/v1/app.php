@@ -1,7 +1,6 @@
 <?php
 
 use utility\UtilityClass;
-use utility\Sanitize;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -23,16 +22,20 @@ $app->get('/', function () {
 
 $app->get('/courses', function () use ($app, $log, $dbHelperObject) {
     $log->debug("courses");
-    $columns = $app->request->get('fields') ? $app->request->get('fields') : '*';
+    $columns = $app->request->get('fields');
 //    $columns = (($body->fields) ? $body->fields : "*");
     //$columns = "title,description,price,start_date,end_date,max_number_of_students";
     $table = 'v_courses';
-    $where = $app->request->get('where');
-    $orwhere = $app->request->get('orwhere');
+    $wFields = $app->request->get('wFields');
+    $wCond = $app->request->get('wCond');
+    $oFields = $app->request->get('oFields');
+    $oCond = $app->request->get('oCond');
+    $operators = $app->request->get('op');
     $sort = $app->request->get('sort');
-    $limit = $app->request->get('limit');
+    $limit = $app->request->get('lim');
+    $offset = $app->request->get('off');
 
-    $response = $dbHelperObject->select($table, $columns, $where, $orwhere, $limit);
+    $response = $dbHelperObject->select($table, $columns, $wFields, $wCond, $oFields, $oCond, $operators, $sort, $limit, $offset);
     UtilityClass::echoResponse(200, $response);
 });
 
