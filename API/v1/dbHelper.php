@@ -7,15 +7,18 @@ use PDOException;
 use utility\UtilityClass;
 use utility\Sanitize;
 use utility\SanitizeNumber;
+use utility\SanitizeField;
+use utility\SanitizeCond;
 
 class dbHelper {
 
     private $db;
     private $sanitizer;
 
-    //private $err;
-    function __construct() {
+//private $err;
+    function __construct($mode) {
         $this->sanitizer = new Sanitize();
+        $this->mode = $mode;
         $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8';
         try {
             $this->db = new PDO($dsn, DB_USERNAME, DB_PASSWORD);
@@ -31,79 +34,127 @@ class dbHelper {
         }
     }
 
-    public function select($table, $columns, $where, $orwhere, $sort = null, $limit = 0, $offset = 0) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
+    public function select($table, $fields, $wFields, $wCond, $oFields, $oCond, $operators = "e", $sort = null, $limit = 0, $offset = 0) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
         try {
-            $q = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS  WHERE table_name = 'v_courses'";
-            $stmt = $this->db->query($q);
-            $possible_columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $q = "SHOW COLUMNS FROM " . $table;
+            $qstmt = $this->db->query($q);
+            $possible_columns_name = $qstmt->fetchAll(PDO::FETCH_COLUMN);
+//$possible_columns_type = $qstmt->fetchAll(PDO::FETCH_COLUMN, 1); // not working beacuse fetchall discard other columns after first call
         } catch (Exception $ex) {
             $status_code = 500;
-            $response =  "impossible get column names from table " . $e->getMessage();
+            $response = "Unable to get column names from table " . $ex->getMessage();
             UtilityClass::echoResponse($status_code, $response);
         }
 
 
-        try {
-            $a = array();  // chiave associativa per l'array di condizioni where in AND and OR
-
-            if ($limit) {
-                $limit = $this->sanitizer->setInput(new SanitizeNumber($limit));
-                $limit = " LIMIT " . $limit;
-            } else {
-                $limit = " ";
-            }
-
-            if ($limit && $offset) {
-                $offset = $this->sanitizer->setInput(new SanitizeNumber($offset));
-                $limited = " OFFSET " . $offset;
-            } else {
-                $offset = " ";
-            }
-            /*
-             * Transform a string with comma in an array using comma as delimiter
-             * then sanitize each element and remove spaces.
-             * If an element start with - then that column will be sorted in descend way.
-             */
-            if ($sort) {
-                
-            } else {
-                $order = " ";
-            }
-            if ($where) {
-                $where_sanitized = $this->getWhere($where, $possible_columns);
-                $w = ' WHERE 1=1 ';
-                foreach ($where_sanitized as $key => $value) {
-                    $w .= " and " . $key . " like :" . $key;
-                    $a[":" . $key] = $value;
-                }
-            } else {
-                $w = ' ';
-            }
-            if ($orwhere) {
-                $orwhere_sanitized = $this->getWhere($orwhere, $possible_columns);
-                foreach ($orwhere_sanitized as $key => $value) {
-                    $ow .= " or " . $key . " like :" . $key;
-                    $a[":" . $key] = $value;
-                }
-            } else {
-                $ow = ' ';
-            }
+        $a = array();  // chiave associativa per l'array di condizioni where in AND and OR
+        $ow = ' ';
+        $w = ' ';
+        $percent_sx = ' ';
+        $percent_dx = ' ';
 
 
-            $columns_array = explode(',', $columns);
-            $columns_sanitized = array_map(function($s) {
-                $s = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW);
-                return trim($s);
-            }, $columns_array);
-            $column_intersect = array_intersect($possible_columns, $columns_sanitized); // controlla che i campi facciano effettivamente parte di quelli disponibili
+        if ($fields) { // @todo check is string
+            $columns_array = explode(',', $fields);
+            $this->sanitizer->setInput(new SanitizeField);
+
+            foreach ($columns_array as $value) {
+                $columns_sanitized[] = $this->sanitizer->loadInput($value);
+            }
+            $column_intersect = array_intersect($columns_sanitized, $possible_columns_name); // controlla che i campi facciano effettivamente parte di quelli disponibili
             if (!(count($column_intersect) == count($columns_sanitized))) { // controllo che il numero di campi 
                 $status_code = 422; // Unprocessable Entity
-                $response = "Some fields in where or orwhere condition are mispelled";
+                $response["status"] = "error";
+                $response["message"] = "Some requested fields are mispelled possible fields are : " . implode(',', $possible_columns_name);
                 UtilityClass::echoResponse($status_code, $response);
             }
-            $columns = implode(',', $columns_sanitized);
+            $columns = implode(',', $column_intersect);
+        } else {
+            $columns = implode(',', $possible_columns_name);
+        }
+
+
+        if ($limit) {
+            $this->sanitizer->setInput(new SanitizeNumber());
+            $limit = $this->sanitizer->loadInput($limit);
+            $limit = " LIMIT " . $limit;
+        } else {
+            $limit = " ";
+        }
+
+        if ($limit && $offset) {
+            $offset_type = "int";
+            $this->sanitizer->setInput(new SanitizeNumber());
+            $offset = $this->sanitizer->loadInput($offset);
+            $offset = " OFFSET " . $offset;
+        } else {
+            $offset = " ";
+        }
+        if ($sort) {
+            $order = $this->getOrder($sort,$possible_columns_name);
+        } else {
+            $order = " ";
+        }
+
+        if ($operators) {
+
+            $wFields = explode(',', $wFields);
+            $wCond = explode(',', $wCond);
+            $oFields = explode(',', $oFields);
+            $oCond = explode(',', $oCond);
+            $op_array = explode(',', $operators);
+
+            if (count($wFields) == count($wCond) && (count($oFields) == count($oCond)) && count($op_array) == (count($oFields) + count($wFields))) {
+                if ($wFields) {
+                    $w = ' WHERE 1=1 ';
+                    $w_fields_sanitized = $this->getWhereSanitized($wFields, $wCond, $possible_columns_name);
+                    foreach ($w_fields_sanitized as $key => $value) {
+                        $op = trim($op_array[0]);
+                        if ($op === "s") {
+                            $percent_sx = "%";
+                        }
+                        if ($op === "d") {
+                            $percent_dx = "%";
+                        }
+                        $operator = $this->getOp($op);
+                        $w .= " and " . $key . " $operator :w" . $key;
+                        $a[":w" . $key] = $percent_sx . $value . $percent_dx;
+                        array_splice($op_array, 0, 1);
+                    }
+                } else {
+                    $w = ' ';
+                }
+                if ($oFields) {
+                    $ow = "";
+                    $orwhere_sanitized = $this->getWhereSanitized($oFields, $oCond, $possible_columns_name);
+                    foreach ($orwhere_sanitized as $key => $value) {
+                        $op = trim($op_array[0]);
+                        if ($op === "s") {
+                            $percent_sx = "%";
+                        }
+                        if ($op === "d") {
+                            $percent_dx = "%";
+                        }
+                        $operator = $this->getOp($op);
+                        $ow .= " or " . $key . " $operator :o" . $key;
+                        $a[":o" . $key] = $percent_sx . $value . $percent_dx;
+                        array_splice($op_array, 0, 1);
+                    }
+                } else {
+                    
+                }
+            } else {
+                $status_code = 422; // Unprocessable Entity
+                $response['status'] = 'error';
+                $response['message'] = "Some fields in where or orwhere conditions are missing or are missing one or more parameters";
+                UtilityClass::echoResponse($status_code, $response);
+            }
+        }
+        try {
 
             $query = "SELECT " . $columns . " FROM " . $table . $w . $ow . $order . $limit . $offset;
+            $response['query'] = $query;
+            $response['a'] = $a;
             $stmt = $this->db->prepare($query);
 
             $stmt->execute($a);
@@ -256,59 +307,97 @@ class dbHelper {
         }
     }
 
-    private function getWhere($where, $columns_array) {
-        $where_array = preg_split('/(=|,)/', $where);
-        $where_sanitizied = array_map(function($s) {
-            $s = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW);
-            return trim($s);
-        }, $where_array);
-        $field = array();
-        $condition = array();
-        foreach ($where_sanitizied as $k => $v) {
-            if ($k % 2 == 0) {
-                $field[] = $v;
-            } else {
-                $condition[] = $v;
-            }
+    private function getWhereSanitized($fields, $cond, $columns_array) {
+        $this->sanitizer->setInput(new SanitizeCond());
+        foreach ($cond as $value) {
+            $cond_sanitized[] = $this->sanitizer->loadInput($value);
         }
-        $field_intersect = array_intersect($field, $columns_array); // controlla che i campi facciano effettivamente parte di quelli disponibili
-        if (!(count($field_intersect) == count($field))) {
+        $this->sanitizer->setInput(new SanitizeField());
+        foreach ($fields as $value) {
+            $fields_sanitized[] = $this->sanitizer->loadInput($value);
+        }
+        $fields_intersected = array_intersect($fields_sanitized, $columns_array); // controlla che i campi facciano effettivamente parte di quelli disponibili
+        if (count($fields_intersected) !== count($fields_sanitized)) {
             $status_code = 422; // Unprocessable Entity
-            $response = "Some fields in where or orwhere condition are mispelled";
+            $response['status'] = 'error';
+            $response['message'] = "Some fields in where or orwhere condition are mispelled";
             UtilityClass::echoResponse($status_code, $response);
+        } elseif (count($fields_intersected) !== count($cond_sanitized)) {
+            $status_code = 422; // Unprocessable Entity
+            $response['status'] = 'error';
+            $response['message'] = "Some fields in where or orwhere condition are missing";
+            UtilityClass::echoResponse($status_code, $response);
+        } else {
+            $where_sanitized = array_combine($fields_intersected, $cond_sanitized);
+            return $where_sanitized;
         }
     }
 
-    private function getOrder($sort) {
-        $order = " ORDER BY ";
-        $sort = explode(',', $sort);
-        $sort = array_map(function($s) {
-            $s = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW);
-            return trim($s);
-        }, $sort);
-        foreach ($sort as $expr) {
+    private function getOrder($sort, $columns_array) {
+        $this->sanitizer->setInput(new SanitizeField());
+        $sort_array = explode(',', $sort);
+        $i = 0;
+        foreach ($sort_array as $expr) {
             if ('-' == substr($expr, 0, 1)) {
-                $order .= $expr . " DESC ,";
+                $mixDesc_array[$i] = $this->sanitizer->loadInput($expr);
+                $order_array[] = $mixDesc_array[$i] . " DESC ";
+                
             } else {
-                $order .= $expr . " ,";
+                $order_array[$i] = $this->sanitizer->loadInput($expr);
+                $mixAsc_array[] = $order_array[$i];
             }
+            $i++;
         }
-        $order = substr($order, 0, (strlen($order) - 1));
-        return $order;
+        $array_toCheck = array_merge($mixDesc_array,$mixAsc_array);
+        $sort_intersected = array_intersect($array_toCheck, $columns_array); // controlla che i campi facciano effettivamente parte di quelli disponibili
+        if (count($sort_intersected) !== count($order_array)) {
+            $status_code = 422; // Unprocessable Entity
+            $response['status'] = 'error';
+            $response['message'] = "Some fields in sort condition are mispelled";
+            UtilityClass::echoResponse($status_code, $response);
+        } else {
+            $order = implode(',', $order_array); // unisco i pezzi con la virgola 
+            $order = " ORDER BY " . $order ;
+            return $order;
+        }
     }
 
+    private function getOp($op_element) {
+        switch ($op_element) {
 
+            case "l":
+                $op = "<";
+                break;
 
-    private $output;
+            case "le":
+                $op = "<=";
+                break;
 
-    public function setOutput(OutputInterface $outputType)
-    {
-        $this->output = $outputType;
-    }
+            case "g":
+                $op = ">";
+                break;
 
-    public function loadOutput()
-    {
-        return $this->output->load();
+            case "ge":
+                $op = ">=";
+                break;
+
+            case "s":
+                $op = "like";
+                break;
+
+            case "d":
+                $op = "like";
+                break;
+
+            case "sd":
+                $op = "like";
+                break;
+
+            default:
+                $op = "=";
+                break;
+        }
+        return $op;
     }
 
 }
