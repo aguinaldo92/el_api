@@ -12,7 +12,7 @@ class UtilityClass {
         $app->contentType('application/json');
         echo json_encode($response, JSON_PRETTY_PRINT); // slim automaticcally append echo() to response body
         if (preg_match("/(4|5)\d\d/", $status_code)) {
-            $app->halt($status_code); // se l'errore è di tipo 4xx o 5xx ferma l'esecuzione del codice
+            $app->halt($status_code,json_encode($response, JSON_PRETTY_PRINT)); // se l'errore è di tipo 4xx o 5xx ferma l'esecuzione del codice
         }
     }
 
