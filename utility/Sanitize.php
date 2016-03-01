@@ -10,7 +10,7 @@ class Sanitize {
         $this->input = $inputType;
     }
 
-    public function loadInput($string,$type) {
+    public function loadInput($string,$type = null) {
         return $this->input->sanitize($string,$type);
     }
 

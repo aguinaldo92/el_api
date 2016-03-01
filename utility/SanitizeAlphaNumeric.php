@@ -9,16 +9,20 @@
 namespace utility;
 
 /**
- * Description of SanitizeString
+ * Description of SanitizeAlphaNumeric
  *
  * @author andrea
  */
-class SanitizeString implements SanitizeInterface {
+class SanitizeAlphaNumeric implements SanitizeInterface {
 
     public function sanitize($string, $allow = null) {
-        $pattern = '/[^A-Za-z0-9_]/';
-        if ($allow === "space") {
-            $pattern = '/[^A-Za-z0-9 _]/';
+        switch ($allow) {
+            case "space":
+                $pattern = '/[^A-Za-z0-9 \_]/';
+                break;
+            default:
+                $pattern = '/[^A-Za-z0-9\_]/';
+                break;
         }
         return trim(preg_replace($pattern, '', $string)); // Removes special chars and leading and trailing spaces
     }
