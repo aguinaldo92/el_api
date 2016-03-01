@@ -7,5 +7,5 @@ define('DB_PASSWORD', '');
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'elearning');
 define('SECRETJWT','elearning');
+define('DBHELPER_MODE','lazy');
 
-?>
