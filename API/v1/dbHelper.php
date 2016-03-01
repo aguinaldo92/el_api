@@ -34,7 +34,7 @@ class dbHelper {
         }
     }
 
-    public function select($table, $fields, $wFields, $wCond, $oFields, $oCond, $operators = "e", $sort = null, $limit = 0, $offset = 0) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
+    public function select($table, $fields, $wFields, $wCond, $oFields, $oCond, $operators, $sort, $limit, $offset) {  // $table supporta le join: $rows = $db->select("ts_users LEFT JOIN ts_companies ON usr_co_id = co_id",array());
         try {
             $q = "SHOW COLUMNS FROM " . $table;
             $qstmt = $this->db->query($q);
@@ -52,6 +52,9 @@ class dbHelper {
         $w = ' ';
         $percent_sx = ' ';
         $percent_dx = ' ';
+        $lim = ' ';
+        $off = ' ';
+
 
 
         if ($fields) { // @todo check is string
@@ -74,24 +77,20 @@ class dbHelper {
         }
 
 
-        if ($limit) {
+        if (is_numeric($limit)) {
             $this->sanitizer->setInput(new SanitizeNumber());
             $limit = $this->sanitizer->loadInput($limit);
-            $limit = " LIMIT " . $limit;
-        } else {
-            $limit = " ";
+            $lim = " LIMIT " . $limit;
+            if (is_numeric($offset)) {
+                $this->sanitizer->setInput(new SanitizeNumber());
+                $offset = $this->sanitizer->loadInput($offset);
+                $off = " OFFSET " . $offset;
+            }
         }
 
-        if ($limit && $offset) {
-            $offset_type = "int";
-            $this->sanitizer->setInput(new SanitizeNumber());
-            $offset = $this->sanitizer->loadInput($offset);
-            $offset = " OFFSET " . $offset;
-        } else {
-            $offset = " ";
-        }
+
         if ($sort) {
-            $order = $this->getOrder($sort,$possible_columns_name);
+            $order = $this->getOrder($sort, $possible_columns_name);
         } else {
             $order = " ";
         }
@@ -152,7 +151,7 @@ class dbHelper {
         }
         try {
 
-            $query = "SELECT " . $columns . " FROM " . $table . $w . $ow . $order . $limit . $offset;
+            $query = "SELECT " . $columns . " FROM " . $table . $w . $ow . $order . $lim . $off;
             $response['query'] = $query;
             $response['a'] = $a;
             $stmt = $this->db->prepare($query);
@@ -302,8 +301,7 @@ class dbHelper {
             $response = array();
             $response["status"] = "error";
             $response["message"] = 'Required field(s) ' . rtrim($errorColumns, ', ') . ' is missing or empty';
-            UtilityClass::echoResponse(204, $response);
-            exit;
+            UtilityClass::echoResponse(422, $response);
         }
     }
 
@@ -341,14 +339,13 @@ class dbHelper {
             if ('-' == substr($expr, 0, 1)) {
                 $mixDesc_array[$i] = $this->sanitizer->loadInput($expr);
                 $order_array[] = $mixDesc_array[$i] . " DESC ";
-                
             } else {
                 $order_array[$i] = $this->sanitizer->loadInput($expr);
                 $mixAsc_array[] = $order_array[$i];
             }
             $i++;
         }
-        $array_toCheck = array_merge($mixDesc_array,$mixAsc_array);
+        $array_toCheck = array_merge($mixDesc_array, $mixAsc_array);
         $sort_intersected = array_intersect($array_toCheck, $columns_array); // controlla che i campi facciano effettivamente parte di quelli disponibili
         if (count($sort_intersected) !== count($order_array)) {
             $status_code = 422; // Unprocessable Entity
@@ -357,7 +354,7 @@ class dbHelper {
             UtilityClass::echoResponse($status_code, $response);
         } else {
             $order = implode(',', $order_array); // unisco i pezzi con la virgola 
-            $order = " ORDER BY " . $order ;
+            $order = " ORDER BY " . $order;
             return $order;
         }
     }

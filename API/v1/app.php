@@ -22,18 +22,32 @@ $app->get('/', function () {
 
 $app->get('/courses', function () use ($app, $log, $dbHelperObject) {
     $log->debug("courses");
-    $columns = $app->request->get('fields');
-//    $columns = (($body->fields) ? $body->fields : "*");
-    //$columns = "title,description,price,start_date,end_date,max_number_of_students";
     $table = 'v_courses';
+    $columns = $app->request->get('fields');
     $wFields = $app->request->get('wFields');
     $wCond = $app->request->get('wCond');
     $oFields = $app->request->get('oFields');
     $oCond = $app->request->get('oCond');
     $operators = $app->request->get('op');
     $sort = $app->request->get('sort');
-    $limit = $app->request->get('lim');
-    $offset = $app->request->get('off');
+    $limit = isset($id) ? 1 : $app->request->get('lim');
+    $offset =isset($id) ? 0 : $app->request->get('off');
+
+    $response = $dbHelperObject->select($table, $columns, $wFields, $wCond, $oFields, $oCond, $operators, $sort, $limit, $offset);
+    UtilityClass::echoResponse(200, $response);
+});
+$app->get('/courses/:id', function ($id) use ($app, $log, $dbHelperObject) {
+    $log->debug("course with ID = $id");
+    $table = 'v_courses';
+    $columns = $app->request->get('fields');
+    $wFields = "ID" . $app->request->get('wFields');
+    $wCond = "$id" . $app->request->get('wCond');
+    $oFields = $app->request->get('oFields');
+    $oCond = $app->request->get('oCond');
+    $operators = "=" . $app->request->get('op');
+    $sort = $app->request->get('sort');
+    $limit = $id ? 1 : $app->request->get('lim');
+    $offset = $id ? null : $app->request->get('off');
 
     $response = $dbHelperObject->select($table, $columns, $wFields, $wCond, $oFields, $oCond, $operators, $sort, $limit, $offset);
     UtilityClass::echoResponse(200, $response);
@@ -41,14 +55,18 @@ $app->get('/courses', function () use ($app, $log, $dbHelperObject) {
 
 $app->get('/courses/:id/lessons', function ($id) use ($app, $log, $dbHelperObject) {
     $log->debug("lessons of course $id");
-
-    $columns = "title,date,start_at,finish_at,ID_course";
     $table = 'V_lesson_of_course';
-    $where = array("ID_course" => "$id");
-    $orwhere = array();
-    $limit = 500;
+    $columns = $app->request->get('fields');
+    $wFields = "ID_course" . $app->request->get('wFields');
+    $wCond = "$id" . $app->request->get('wCond');
+    $oFields = $app->request->get('oFields');
+    $oCond = $app->request->get('oCond');
+    $operators = "=" . $app->request->get('op');
+    $sort = $app->request->get('sort');
+    $limit = $app->request->get('lim');
+    $offset = $app->request->get('off');
 
-    $response = $dbHelperObject->select($table, $columns, $where, $orwhere, $limit);
+    $response = $dbHelperObject->select($table, $columns, $wFields, $wCond, $oFields, $oCond, $operators, $sort, $limit, $offset);
     UtilityClass::echoResponse(200, $response);
 });
 
